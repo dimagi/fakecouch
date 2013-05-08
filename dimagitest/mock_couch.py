@@ -9,12 +9,12 @@ except ImportError:
     from urllib import urlopen, urlencode
 
 
-class MockCouch(object):
+class MockCouchDb(object):
     """
     An in-memory mock of CoucDB, instantiated with a simple mapping
     of resource and params to results.
 
-    mc = MockCouch({
+    mc = MockCouchDb({
         'views': {
             'my/view': [
                 (

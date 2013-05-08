@@ -1,0 +1,1 @@
+from mock_couch import MockCouchDb
