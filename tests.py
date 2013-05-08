@@ -1,11 +1,12 @@
 from unittest2 import TestCase
 from couchdbkit.schema import Document
-from .mock_couch import MockCouchDb
+
+import fakecouch
 
 
 class Test(TestCase):
     def test_mock_couch_view(self):
-        db = MockCouchDb(views={
+        db = fakecouch.FakeCouchDb(views={
             'my/view': [
                 (
                     {'reduce': True, 'group': True, 'startkey': [], 'endkey': [{}]},
@@ -22,7 +23,7 @@ class Test(TestCase):
         self.assertEqual([{'r': 'result1'}, {'r': 'result2'}], result.rows)
 
     def test_mock_couch_doc_get(self):
-        db = MockCouchDb(docs={
+        db = fakecouch.FakeCouchDb(docs={
             "123": {'d': 1},
             "124": {'d': 2}
         })
@@ -34,7 +35,7 @@ class Test(TestCase):
         self.assertEqual(2, result)
 
     def test_mock_couch_doc_save(self):
-        db = MockCouchDb()
+        db = fakecouch.FakeCouchDb()
 
         class MockDoc(Document):
             _db = db

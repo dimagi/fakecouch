@@ -4,13 +4,13 @@ except ImportError:
     from distutils.core import setup
 
 setup(
-    name='dimagi-test-utils',
-    version='1.0.0',
-    description='Shared testing utilities',
+    name='fakecouch',
+    version='0.0.1',
+    description='Fake implementation of CouchDBKit api for testing purposes',
     author='Dimagi',
     author_email='dev@dimagi.com',
-    url='http://github.com/dimagi/test-utils',
-    packages=['dimagitest'],
+    url='http://github.com/dimagi/fakecouch',
+    py_modules=['fakecouch'],
     license='MIT',
     install_requires=[
         'couchdbkit',
