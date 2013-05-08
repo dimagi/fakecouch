@@ -1,4 +1,5 @@
 from couchdbkit import ResourceNotFound
+from collections import OrderedDict
 
 # This import pattern supports Python 2 and 3
 try:
@@ -14,18 +15,16 @@ class MockCouchDb(object):
     An in-memory mock of CoucDB, instantiated with a simple mapping
     of resource and params to results.
 
-    mc = MockCouchDb({
-        'views': {
-            'my/view': [
-                (
-                    {'startkey': ['j'], 'endkey': ['j', {}], reduce=True},
-                    [
-                       ... result objects ...
-                    ]
-                ),
-            ],
-        },
-        'docs': {
+    mc = MockCouchDb(views={
+        'my/view': [
+            (
+                {'startkey': ['j'], 'endkey': ['j', {}], reduce=True},
+                [
+                   ... result objects ...
+                ]
+            ),
+        ]},
+        docs={
             'my_doc_id': { ... doc object ...}
         }
     })
@@ -35,16 +34,25 @@ class MockCouchDb(object):
 
     mc.mock_docs[doc['_id']] == doc
     """
-    def __init__(self, mock_data):
-        if 'views' in mock_data:
-            self.view_mock = dict([(resource, dict([(urlencode(params), result) for params, result in resource_results]))
-                              for resource, resource_results in mock_data['views'].items()])
 
-        if 'docs' in mock_data:
-            self.mock_docs = mock_data['docs']
+    def __init__(self, views=None, docs=None):
+        if views:
+            self.view_mock = dict([
+                (resource, dict([(self._param_key(params), result) for params, result in view_results]))
+                for resource, view_results in views.items()])
+        else:
+            self.view_mock = {}
+
+        self.mock_docs = docs or {}
+        
+    def add_view(self, name, view_results):
+        self.view_mock[name] = dict([(self._param_key(params), result) for params, result in view_results])
+
+    def _param_key(self, params):
+        return urlencode(OrderedDict(sorted(params.items(), key=lambda p: p[0])))
 
     def view(self, view_name, schema=None, wrapper=None, **params):
-        return MockResult(self.view_mock[view_name][urlencode(params)])
+        return MockResult(self.view_mock[view_name][self._param_key(params)])
 
     def save_doc(self, doc, **params):
         self.mock_docs[doc["_id"]] = doc

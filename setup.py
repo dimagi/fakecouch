@@ -14,5 +14,8 @@ setup(
     license='MIT',
     install_requires=[
         'couchdbkit',
+    ],
+    tests_require=[
+        'unittest2'
     ]
 )
