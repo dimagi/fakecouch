@@ -1,13 +1,10 @@
 from couchdbkit import ResourceNotFound
-from collections import OrderedDict
 
 # This import pattern supports Python 2 and 3
 try:
-    from urllib.request import urlopen
-    from urllib.parse import urlparse, urlencode
+    from urllib.parse import urlencode
 except ImportError:
-    from urlparse import urlparse
-    from urllib import urlopen, urlencode
+    from urllib import urlencode
 
 
 class FakeCouchDb(object):
@@ -44,12 +41,12 @@ class FakeCouchDb(object):
             self.view_mock = {}
 
         self.mock_docs = docs or {}
-        
+
     def add_view(self, name, view_results):
         self.view_mock[name] = dict([(self._param_key(params), result) for params, result in view_results])
 
     def _param_key(self, params):
-        return urlencode(OrderedDict(sorted(params.items(), key=lambda p: p[0])))
+        return urlencode(sorted(params.items(), key=lambda p: p[0]))
 
     def view(self, view_name, schema=None, wrapper=None, **params):
         view = self.view_mock.get(view_name, {})
