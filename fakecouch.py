@@ -52,7 +52,8 @@ class FakeCouchDb(object):
         return urlencode(OrderedDict(sorted(params.items(), key=lambda p: p[0])))
 
     def view(self, view_name, schema=None, wrapper=None, **params):
-        return MockResult(self.view_mock[view_name][self._param_key(params)])
+        view = self.view_mock.get(view_name, {})
+        return MockResult(view.get(self._param_key(params), []))
 
     def save_doc(self, doc, **params):
         self.mock_docs[doc["_id"]] = doc
