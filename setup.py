@@ -3,13 +3,6 @@ try:
 except ImportError:
     from distutils.core import setup
 
-import sys
-
-install_requires = ['couchdbkit']
-
-if sys.version_info[1] < 7:
-    install_requires.append('ordereddict')
-
 setup(
     name='fakecouch',
     version='0.0.1',
@@ -21,7 +14,9 @@ setup(
     test_suite='tests',
     test_loader='unittest2:TestLoader',
     license='MIT',
-    install_requires=install_requires,
+    install_requires=[
+        'couchdbkit',
+    ],
     tests_require=[
         'unittest2'
     ]
