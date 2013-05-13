@@ -1,4 +1,5 @@
 from couchdbkit import ResourceNotFound
+from couchdbkit.resource import encode_params
 
 # This import pattern supports Python 2 and 3
 try:
@@ -46,6 +47,7 @@ class FakeCouchDb(object):
         self.view_mock[name] = dict([(self._param_key(params), result) for params, result in view_results])
 
     def _param_key(self, params):
+        params = encode_params(params)
         return urlencode(sorted(params.items(), key=lambda p: p[0]))
 
     def view(self, view_name, schema=None, wrapper=None, **params):

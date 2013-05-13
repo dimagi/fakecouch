@@ -1,5 +1,6 @@
 from unittest2 import TestCase
 from couchdbkit.schema import Document
+from datetime import date
 
 import fakecouch
 
@@ -21,6 +22,11 @@ class Test(TestCase):
         result = db.view("my/view", startkey=[], endkey=[{}], group=True, reduce=True)
         self.assertEqual(2, result.total_rows)
         self.assertEqual([{'r': 'result1'}, {'r': 'result2'}], result.rows)
+
+    def test_mock_couch_view_illegal_params(self):
+        db = fakecouch.FakeCouchDb()
+        with self.assertRaises(TypeError):
+            db.view("my/view", startkey=[date(2012, 9, 1)], endkey=[date(2012, 10, 1), {}])
 
     def test_mock_couch_doc_get(self):
         db = fakecouch.FakeCouchDb(docs={
