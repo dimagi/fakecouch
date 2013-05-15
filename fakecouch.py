@@ -75,6 +75,9 @@ class MockResult(object):
     def __init__(self, rows):
         self.rows = rows
 
+    def all(self):
+        return self.rows
+
     @property
     def total_rows(self):
         return len(self.rows)
