@@ -47,6 +47,14 @@ class Test(TestCase):
             _db = db
             _doc_type = "Mock"
 
+        doc = MockDoc()
+        doc.save()
+
+        self.assertTrue(doc._id != '')
+        self.assertEqual({'doc_type': 'MockDoc', '_id': doc._id}, db.mock_docs[doc._id])
+
+        db.reset()
+
         doc = MockDoc(_id="1")
         doc.save()
 

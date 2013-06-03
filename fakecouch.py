@@ -1,3 +1,4 @@
+import uuid
 from couchdbkit import ResourceNotFound
 from couchdbkit.resource import encode_params
 
@@ -43,6 +44,10 @@ class FakeCouchDb(object):
 
         self.mock_docs = docs or {}
 
+    def reset(self):
+        self.view_mock = {}
+        self.mock_docs = {}
+
     def add_view(self, name, view_results):
         self.view_mock[name] = dict([(self._param_key(params), result) for params, result in view_results])
 
@@ -52,10 +57,18 @@ class FakeCouchDb(object):
 
     def view(self, view_name, schema=None, wrapper=None, **params):
         view = self.view_mock.get(view_name, {})
-        return MockResult(view.get(self._param_key(params), []))
+        rows = view.get(self._param_key(params), [])
+        if wrapper:
+            rows = [wrapper(r) for r in rows]
+        return MockResult(rows)
 
     def save_doc(self, doc, **params):
-        self.mock_docs[doc["_id"]] = doc
+        if '_id' in doc:
+            self.mock_docs[doc["_id"]] = doc
+        else:
+            id = uuid.uuid1()
+            doc.update({ '_id': id})
+            self.mock_docs[doc["_id"]] = doc
 
     def get(self, docid, rev=None, wrapper=None):
         doc = self.mock_docs.get(docid, None)
