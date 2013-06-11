@@ -1,4 +1,5 @@
 import uuid
+import logging
 from couchdbkit import ResourceNotFound
 from couchdbkit.resource import encode_params
 
@@ -7,6 +8,9 @@ try:
     from urllib.parse import urlencode
 except ImportError:
     from urllib import urlencode
+
+
+logger = logging.getLogger(__name__)
 
 
 class FakeCouchDb(object):
@@ -45,11 +49,13 @@ class FakeCouchDb(object):
         self.mock_docs = docs or {}
 
     def reset(self):
+        logger.info('Fakecouch reset')
         self.view_mock = {}
         self.mock_docs = {}
 
     def add_view(self, name, view_results):
         self.view_mock[name] = dict([(self._param_key(params), result) for params, result in view_results])
+        logger.debug('View added: %s with keys: %s', name, self.view_mock[name].keys())
 
     def _param_key(self, params):
         params = encode_params(params)
@@ -57,7 +63,9 @@ class FakeCouchDb(object):
 
     def view(self, view_name, schema=None, wrapper=None, **params):
         view = self.view_mock.get(view_name, {})
-        rows = view.get(self._param_key(params), [])
+        key = self._param_key(params)
+        rows = view.get(key, [])
+        logger.debug('view(view_name=%s, key=%s): results=%s', view_name, key, rows)
         if wrapper:
             rows = [wrapper(r) for r in rows]
         return MockResult(rows)
@@ -65,13 +73,16 @@ class FakeCouchDb(object):
     def save_doc(self, doc, **params):
         if '_id' in doc:
             self.mock_docs[doc["_id"]] = doc
+            logger.debug('save_doc(%s)', doc['_id'])
         else:
             id = uuid.uuid1()
             doc.update({ '_id': id})
             self.mock_docs[doc["_id"]] = doc
+            logger.debug('save_doc(%s): ID generated', doc['_id'])
 
     def get(self, docid, rev=None, wrapper=None):
         doc = self.mock_docs.get(docid, None)
+        logger.debug('get(%s): %s', docid, 'Found' if doc else 'Not found')
         if not doc:
             raise ResourceNotFound
         elif wrapper:
@@ -80,6 +91,7 @@ class FakeCouchDb(object):
             return doc
 
     def open_doc(self, docid):
+        logger.debug('open_doc(%s)', docid)
         doc = self.mock_docs.get(docid, None)
         return doc
 
