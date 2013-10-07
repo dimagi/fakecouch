@@ -1,7 +1,33 @@
 import uuid
 import logging
-from couchdbkit import ResourceNotFound
-from couchdbkit.resource import encode_params
+
+# this import pattern lets fakecouch not depend on couchdbkit
+try:
+    import couchdbkit
+except ImportError:
+    import json
+
+    class ResourceNotFound(Exception):
+        pass
+
+    # copy-pasted from couchdbkit.resource
+    def encode_params(params):
+        """ encode parameters in json if needed """
+        _params = {}
+        if params:
+            for name, value in params.items():
+                if name in ('key', 'startkey', 'endkey'):
+                    value = json.dumps(value)
+                elif value is None:
+                    continue
+                elif not isinstance(value, basestring):
+                    value = json.dumps(value)
+                _params[name] = value
+        return _params
+else:
+    from couchdbkit import ResourceNotFound
+    from couchdbkit.resource import encode_params
+
 
 # This import pattern supports Python 2 and 3
 try:
@@ -15,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 class FakeCouchDb(object):
     """
-    An in-memory mock of CoucDB, instantiated with a simple mapping
+    An in-memory mock of CouchDB, instantiated with a simple mapping
     of resource and params to results.
 
     mc = FakeCouchDb(views={

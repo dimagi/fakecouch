@@ -14,10 +14,9 @@ setup(
     test_suite='tests',
     test_loader='unittest2:TestLoader',
     license='MIT',
-    install_requires=[
-        'couchdbkit',
-    ],
+    install_requires=[],
     tests_require=[
-        'unittest2'
+        'unittest2',
+        'couchdbkit',
     ]
 )
