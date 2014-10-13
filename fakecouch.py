@@ -98,11 +98,13 @@ class FakeCouchDb(object):
 
     def save_doc(self, doc, **params):
         if '_id' in doc:
+            doc["_rev"] = str(uuid.uuid1())
             self.mock_docs[doc["_id"]] = doc
             logger.debug('save_doc(%s)', doc['_id'])
         else:
             id = uuid.uuid1()
-            doc.update({ '_id': id})
+            rev = str(uuid.uuid1())
+            doc.update({ '_id': id, '_rev': rev})
             self.mock_docs[doc["_id"]] = doc
             logger.debug('save_doc(%s): ID generated', doc['_id'])
 
@@ -120,6 +122,12 @@ class FakeCouchDb(object):
         logger.debug('open_doc(%s)', docid)
         doc = self.mock_docs.get(docid, None)
         return doc
+
+    def delete_doc(self, docid):
+        if docid not in self.mock_docs:
+            raise ResourceNotFound
+        else:
+            del self.mock_docs[docid]
 
 
 class MockResult(object):
