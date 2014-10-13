@@ -3,6 +3,7 @@ from couchdbkit.schema import Document
 from datetime import date
 
 import fakecouch
+from fakecouch import ResourceNotFound
 
 
 class Test(TestCase):
@@ -59,3 +60,18 @@ class Test(TestCase):
         doc.save()
 
         self.assertEqual({'doc_type': 'MockDoc', '_id': '1'}, db.mock_docs["1"])
+
+    def test_mock_couch_doc_delete(self):
+        db = fakecouch.FakeCouchDb()
+
+        class MockDoc(Document):
+            _db = db
+            _doc_type = "Mock"
+
+        doc = MockDoc(_id='1', _rev="1")
+        doc.save()
+        result = db.get("1")
+        self.assertIsNotNone(result)
+        doc.delete()
+        with self.assertRaises(ResourceNotFound):
+            db.get("1")

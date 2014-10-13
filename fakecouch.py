@@ -121,6 +121,12 @@ class FakeCouchDb(object):
         doc = self.mock_docs.get(docid, None)
         return doc
 
+    def delete_doc(self, docid):
+        if docid not in self.mock_docs:
+            raise ResourceNotFound
+        else:
+            del self.mock_docs[docid]
+
 
 class MockResult(object):
     def __init__(self, rows):
