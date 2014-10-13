@@ -68,7 +68,7 @@ class Test(TestCase):
             _db = db
             _doc_type = "Mock"
 
-        doc = MockDoc(_id='1', _rev="1")
+        doc = MockDoc(_id='1')
         doc.save()
         result = db.get("1")
         self.assertIsNotNone(result)
