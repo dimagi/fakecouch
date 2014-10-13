@@ -52,14 +52,14 @@ class Test(TestCase):
         doc.save()
 
         self.assertTrue(doc._id != '')
-        self.assertEqual({'doc_type': 'MockDoc', '_id': doc._id}, db.mock_docs[doc._id])
+        self.assertEqual({'doc_type': 'MockDoc', '_id': doc._id, '_rev': doc._rev}, db.mock_docs[doc._id])
 
         db.reset()
 
         doc = MockDoc(_id="1")
         doc.save()
 
-        self.assertEqual({'doc_type': 'MockDoc', '_id': '1'}, db.mock_docs["1"])
+        self.assertEqual({'doc_type': 'MockDoc', '_id': '1', '_rev': doc._rev}, db.mock_docs["1"])
 
     def test_mock_couch_doc_delete(self):
         db = fakecouch.FakeCouchDb()
