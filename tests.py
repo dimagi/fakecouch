@@ -1,4 +1,5 @@
 from unittest2 import TestCase
+from couchdbkit.exceptions import ResourceConflict
 from couchdbkit.schema import Document
 from datetime import date
 
@@ -75,3 +76,11 @@ class Test(TestCase):
         doc.delete()
         with self.assertRaises(ResourceNotFound):
             db.get("1")
+
+    def test_saving_modified_doc(self):
+        db = fakecouch.FakeCouchDb(docs={
+            '123': {'_id': '123', '_rev': '123'}
+        })
+
+        with self.assertRaises(ResourceConflict):
+            db.save_doc({'_id': '123', '_rev': '124'})

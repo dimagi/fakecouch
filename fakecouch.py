@@ -2,6 +2,8 @@ import uuid
 import logging
 
 # this import pattern lets fakecouch not depend on couchdbkit
+from couchdbkit.exceptions import ResourceConflict
+
 try:
     import couchdbkit
 except ImportError:
@@ -124,6 +126,9 @@ class FakeCouchDb(object):
 
     def save_doc(self, doc, **params):
         if '_id' in doc:
+            existing = self.mock_docs.get(doc['_id'])
+            if existing and existing.get('_rev') != doc.get('_rev'):
+                raise ResourceConflict()
             doc["_rev"] = str(uuid.uuid1())
             self.mock_docs[doc["_id"]] = doc
             logger.debug('save_doc(%s)', doc['_id'])
@@ -138,7 +143,7 @@ class FakeCouchDb(object):
         doc = self.mock_docs.get(docid, None)
         logger.debug('get(%s): %s', docid, 'Found' if doc else 'Not found')
         if not doc:
-            raise ResourceNotFound
+            raise ResourceNotFound()
         elif wrapper:
             return wrapper(doc)
         else:
@@ -151,7 +156,7 @@ class FakeCouchDb(object):
 
     def delete_doc(self, docid):
         if docid not in self.mock_docs:
-            raise ResourceNotFound
+            raise ResourceNotFound()
         else:
             del self.mock_docs[docid]
 
