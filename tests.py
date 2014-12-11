@@ -12,22 +12,21 @@ class Test(TestCase):
             'my/view': [
                 (
                     {'reduce': True, 'group': True, 'startkey': [], 'endkey': [{}]},
-                    [
-                        {'r': 'result1'},
-                        {'r': 'result2'},
-                    ]
+                    {
+                        'rows': [{'r': 'result1'}, {'r': 'result2'}]
+                    }
                 )
             ]
         })
 
         result = db.view("my/view", startkey=[], endkey=[{}], group=True, reduce=True)
         self.assertEqual(2, result.total_rows)
-        self.assertEqual([{'r': 'result1'}, {'r': 'result2'}], result.rows)
+        self.assertEqual([{'r': 'result1'}, {'r': 'result2'}], result.all())
 
     def test_mock_couch_view_illegal_params(self):
         db = fakecouch.FakeCouchDb()
         with self.assertRaises(TypeError):
-            db.view("my/view", startkey=[date(2012, 9, 1)], endkey=[date(2012, 10, 1), {}])
+            db.view("my/view", startkey=[date(2012, 9, 1)], endkey=[date(2012, 10, 1), {}]).all()
 
     def test_mock_couch_doc_get(self):
         db = fakecouch.FakeCouchDb(docs={

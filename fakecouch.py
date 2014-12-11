@@ -24,9 +24,28 @@ except ImportError:
                     value = json.dumps(value)
                 _params[name] = value
         return _params
+
+
+    class ViewResults(object):
+        def __init__(self, fetch, arg, wrapper, schema, params):
+            assert not (wrapper and schema)
+            self.wrapper = wrapper or schema or (lambda row: row)
+            self.json_body = fetch(arg, params).json_body
+
+        def all(self):
+            return [self.wrapper(row) for row in self.json_body['rows']]
+
+        @property
+        def total_rows(self):
+            return len(self.json_body['rows'])
+
+        def __iter__(self):
+            return iter(self.all())
+
 else:
     from couchdbkit import ResourceNotFound
     from couchdbkit.resource import encode_params
+    from couchdbkit.client import ViewResults
 
 
 # This import pattern supports Python 2 and 3
@@ -49,7 +68,8 @@ class FakeCouchDb(object):
             (
                 {'startkey': ['j'], 'endkey': ['j', {}], reduce=True},
                 [
-                   ... result objects ...
+                    {'id': '123', 'key': 'abc', 'value': None, 'doc': {...},
+                    ... view result rows ...
                 ]
             ),
         ]},
@@ -87,14 +107,20 @@ class FakeCouchDb(object):
         params = encode_params(params)
         return urlencode(sorted(params.items(), key=lambda p: p[0]))
 
-    def view(self, view_name, schema=None, wrapper=None, **params):
+    def raw_view(self, view_name, params):
         view = self.view_mock.get(view_name, {})
         key = self._param_key(params)
-        rows = view.get(key, [])
-        logger.debug('view(view_name=%s, key=%s): results=%s', view_name, key, rows)
-        if wrapper:
-            rows = [wrapper(r) for r in rows]
-        return MockResult(rows)
+
+        if key not in view and 'wrap_doc' in params:
+            params.pop('wrap_doc')
+            key = self._param_key(params)
+
+        result = view.get(key, [])
+        logger.debug('view(view_name=%s, key=%s): result=%s', view_name, key, result)
+        return JsonResponse(result)
+
+    def view(self, view_name, schema=None, wrapper=None, **params):
+        return ViewResults(self.raw_view, view_name, wrapper, schema, params)
 
     def save_doc(self, doc, **params):
         if '_id' in doc:
@@ -130,16 +156,23 @@ class FakeCouchDb(object):
             del self.mock_docs[docid]
 
 
-class MockResult(object):
-    def __init__(self, rows):
-        self.rows = rows
+class JsonResponse(object):
+    def __init__(self, json_body_or_rows):
+        def fake_row(row):
+            if not isinstance(row, dict):
+                raise Exception('Rows must be dicts')
 
-    def all(self):
-        return self.rows
+            return {
+                'id': row.get('id', row.get('_id', None)),
+                'key': row.get('key', None),
+                'value': row.get('value', None),
+                'doc': row.get('doc', row if '_id' in row else None)
+            }
 
-    @property
-    def total_rows(self):
-        return len(self.rows)
-
-    def __iter__(self):
-        return iter(self.rows)
+        if isinstance(json_body_or_rows, dict):
+            self.json_body = json_body_or_rows
+        elif isinstance(json_body_or_rows, list):
+            self.json_body = {
+                'rows': [fake_row(row) for row in json_body_or_rows],
+                'total_rows': len(json_body_or_rows),
+            }
