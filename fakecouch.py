@@ -102,7 +102,7 @@ class FakeCouchDb(object):
             self.mock_docs[doc["_id"]] = doc
             logger.debug('save_doc(%s)', doc['_id'])
         else:
-            id = uuid.uuid1()
+            id = str(uuid.uuid1())
             rev = str(uuid.uuid1())
             doc.update({ '_id': id, '_rev': rev})
             self.mock_docs[doc["_id"]] = doc

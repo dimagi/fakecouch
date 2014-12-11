@@ -51,6 +51,7 @@ class Test(TestCase):
         doc = MockDoc()
         doc.save()
 
+        self.assertTrue(isinstance(doc._id, basestring))
         self.assertTrue(doc._id != '')
         self.assertEqual({'doc_type': 'MockDoc', '_id': doc._id, '_rev': doc._rev}, db.mock_docs[doc._id])
 
