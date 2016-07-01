@@ -84,3 +84,26 @@ class Test(TestCase):
 
         with self.assertRaises(ResourceConflict):
             db.save_doc({'_id': '123', '_rev': '124'})
+
+    def test_update_view(self):
+        db = fakecouch.FakeCouchDb(views={
+            'my/view': [
+                (
+                    {'reduce': True, 'group': True, 'startkey': [], 'endkey': [{}]},
+                    {
+                        'rows': [{'r': 'result1'}, {'r': 'result2'}]
+                    }
+                )
+            ]
+        })
+
+        result = db.view("my/view", startkey=[], endkey=[{}], group=True, reduce=True)
+        self.assertEqual(2, result.total_rows)
+
+        with self.assertRaises(KeyError):
+            db.update_view("another/view", [])
+
+        fake_results = [{'id': 1, 'value': None, 'key': [1], 'doc': {}}]
+        db.update_view("my/view", [({}, fake_results)])
+        result = db.view("my/view")
+        self.assertEqual(list(result), fake_results)

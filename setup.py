@@ -5,7 +5,7 @@ except ImportError:
 
 setup(
     name='fakecouch',
-    version='0.0.8',
+    version='0.0.9',
     description='Fake implementation of CouchDBKit api for testing purposes',
     author='Dimagi',
     author_email='dev@dimagi.com',
