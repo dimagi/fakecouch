@@ -105,6 +105,15 @@ class FakeCouchDb(object):
         self.view_mock[name] = dict([(self._param_key(params), result) for params, result in view_results])
         logger.debug('View added: %s with keys: %s', name, self.view_mock[name].keys())
 
+    def update_view(self, name, view_results):
+        """Update the view results for a given view.
+
+        :param view_results: A list of tuples where the first element is a dictionary
+        of view query parameters and the second element is a list of view result rows.
+        :raises KeyError: If the DB does not already have a view with the given name
+        """
+        self.view_mock[name].update({self._param_key(params): result for params, result in view_results})
+
     def _param_key(self, params):
         params = encode_params(params)
         return urlencode(sorted(params.items(), key=lambda p: p[0]))
