@@ -119,6 +119,12 @@ class FakeCouchDb(object):
         """
         self.view_mock[name].update(self._transform_view_results(view_results))
 
+    def remove_view(self, name):
+        try:
+            del self.view_mock[name]
+        except KeyError:
+            pass
+
     def _transform_view_results(self, view_results):
         return {self._param_key(params): result for params, result in view_results}
 
