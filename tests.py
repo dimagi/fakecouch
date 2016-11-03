@@ -1,6 +1,5 @@
+from couchdbkit import Document
 from unittest2 import TestCase
-from couchdbkit.exceptions import ResourceConflict
-from couchdbkit.schema import Document
 from datetime import date
 
 import fakecouch
@@ -82,7 +81,7 @@ class Test(TestCase):
             '123': {'_id': '123', '_rev': '123'}
         })
 
-        with self.assertRaises(ResourceConflict):
+        with self.assertRaises(fakecouch.ResourceConflict):
             db.save_doc({'_id': '123', '_rev': '124'})
 
     def test_update_view(self):
@@ -107,3 +106,83 @@ class Test(TestCase):
         db.update_view("my/view", [({}, fake_results)])
         result = db.view("my/view")
         self.assertEqual(list(result), fake_results)
+
+    def test_bulk_save_success(self):
+        db = fakecouch.FakeCouchDb(docs=[
+            {'_id': '1', '_rev': '1-abc', 'name': '1'},
+        ])
+
+        results = db.bulk_save([
+            {'_id': '1', '_rev': '1-abc', 'name': '1a'},
+        ])
+        self.assertEqual(1, len(results))
+        self.assertIn('id', results[0])
+        self.assertIn('_rev', results[0])
+        new_rev_num = results[0]['_rev'].split('-')[0]
+        self.assertEqual('2', new_rev_num)
+
+        self.assertEqual('1a', db.get('1')['name'])
+
+    def test_bulk_save_conflict(self):
+        db = fakecouch.FakeCouchDb(docs=[
+            {'_id': '1', '_rev': '2-abc', 'name': '1'},
+        ])
+
+        with self.assertRaises(fakecouch.BulkSaveError) as cm:
+            db.bulk_save([
+                {'_id': '1', '_rev': '1-abc', 'name': '1a'},
+                {'_id': '2', 'name': '2'},
+            ])
+
+        bulk_save_error = cm.exception
+        self.assertEqual(1, len(bulk_save_error.errors))
+        self.assertEqual(1, len(bulk_save_error.results))
+        self.assertDictEqual(
+            {'id': '1', 'error': 'conflict'},
+            bulk_save_error.errors[0]
+        )
+        self.assertEqual('2', db.get('2')['name'])
+
+    def test_bulk_save_all_or_nothing(self):
+        db = fakecouch.FakeCouchDb(docs=[
+            {'_id': '1', '_rev': '2-abc', 'name': '1'},
+        ])
+
+        with self.assertRaises(fakecouch.BulkSaveError) as cm:
+            db.bulk_save([
+                {'_id': '1', '_rev': '1-abc', 'name': '1a'},
+                {'_id': '2', 'name': '2'},
+            ], all_or_nothing=True)
+
+        bulk_save_error = cm.exception
+        self.assertEqual(1, len(bulk_save_error.errors))
+        self.assertEqual(0, len(bulk_save_error.results))
+        self.assertDictEqual(
+            {'id': '1', 'error': 'conflict'},
+            bulk_save_error.errors[0]
+        )
+        with self.assertRaises(ResourceNotFound):
+            db.get('2')
+
+    def test_bulk_save_new_edits(self):
+        orig_doc_1 = {'_id': '1', '_rev': '2-abc', 'name': '1'}
+        db = fakecouch.FakeCouchDb(docs=[
+            orig_doc_1,
+            {'_id': '2', '_rev': '3-def', 'name': '2'},
+        ])
+
+        new_doc_2 = {'_id': '2', '_rev': '4-ghi', 'name': '2a'}
+        docs_to_save = [
+            {'_id': '1', '_rev': '1-abc', 'name': '1a'},
+            new_doc_2,
+            {'_id': '3', 'name': '3'},
+            {'_id': '1', 'name': '1b'},
+        ]
+        with self.assertRaises(fakecouch.BulkSaveError):
+            db.bulk_save(docs_to_save, new_edits=True)
+
+        db.bulk_save(docs_to_save, new_edits=False)
+
+        self.assertEqual(orig_doc_1, db.get('1'))
+        self.assertEqual(new_doc_2, db.get('2'))
+        self.assertEqual('3', db.get('3')['name'])
