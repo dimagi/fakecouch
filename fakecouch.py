@@ -101,7 +101,12 @@ class FakeCouchDb(object):
         else:
             self.view_mock = {}
 
-        self.mock_docs = docs or {}
+        if isinstance(docs, list):
+            self.mock_docs = {
+                doc['_id']: doc for doc in docs
+            }
+        else:
+            self.mock_docs = docs or {}
 
     def reset(self):
         logger.info('Fakecouch reset')
