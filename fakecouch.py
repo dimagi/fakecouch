@@ -162,25 +162,15 @@ class FakeCouchDb(object):
     def save_doc(self, doc, **params):
         if '_id' in doc:
             self._check_conflict(doc)
-            doc["_rev"] = self._next_rev(doc.get("_rev"))
+            doc["_rev"] = _next_rev(doc.get("_rev"))
             self.mock_docs[doc["_id"]] = doc
             logger.debug('save_doc(%s)', doc['_id'])
         else:
             id = str(uuid.uuid1())
-            rev = self._next_rev()
+            rev = _next_rev()
             doc.update({ '_id': id, '_rev': rev})
             self.mock_docs[doc["_id"]] = doc
             logger.debug('save_doc(%s): ID generated', doc['_id'])
-
-    def _next_rev(self, current_rev=None):
-        current_rev_num = 0
-        if current_rev:
-            try:
-                current_rev_num = int(current_rev.split('-')[0])
-            except ValueError:
-                pass
-
-        return '{}-{}'.format(current_rev_num + 1, str(uuid.uuid1()))
 
     def _check_conflict(self, doc):
         existing = self.mock_docs.get(doc['_id'])
@@ -240,18 +230,35 @@ class FakeCouchDb(object):
             for doc in docs:
                 existing = self.mock_docs.get(doc['_id'])
                 if existing:
-                    existing_rev_num = int(existing.get('_rev').split('-')[0])
-                    new_rev_num = int(doc.get('_rev').split('-')[0])
+                    existing_rev_num = _get_rev_num(existing.get('_rev'))
+                    new_rev_num = _get_rev_num(doc.get('_rev'))
                     if new_rev_num > existing_rev_num:
                         self.mock_docs[doc['_id']] = doc
                 else:
                     if '_rev' not in doc:
-                        doc["_rev"] = self._next_rev()
+                        doc["_rev"] = _next_rev()
                     self.mock_docs[doc['_id']] = doc
 
             return []
 
     bulk_save = save_docs
+
+
+def _next_rev(current_rev=None):
+    rev_num = _get_rev_num(current_rev)
+    if not rev_num or rev_num == -1:
+        rev_num = 0
+    return '{}-{}'.format(rev_num + 1, str(uuid.uuid1()))
+
+
+def _get_rev_num(rev=None):
+    if not rev:
+        return None
+
+    try:
+        return int(rev.split('-')[0])
+    except ValueError:
+        return -1
 
 
 class JsonResponse(object):

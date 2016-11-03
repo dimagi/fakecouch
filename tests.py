@@ -176,6 +176,7 @@ class Test(TestCase):
             {'_id': '1', '_rev': '1-abc', 'name': '1a'},
             new_doc_2,
             {'_id': '3', 'name': '3'},
+            {'_id': '1', 'name': '1b'},
         ]
         with self.assertRaises(fakecouch.BulkSaveError):
             db.bulk_save(docs_to_save, new_edits=True)
