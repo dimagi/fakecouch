@@ -2,8 +2,6 @@ import uuid
 import logging
 
 # this import pattern lets fakecouch not depend on couchdbkit
-from couchdbkit.exceptions import ResourceConflict
-
 try:
     import couchdbkit
 except ImportError:
@@ -11,6 +9,15 @@ except ImportError:
 
     class ResourceNotFound(Exception):
         pass
+
+    class ResourceConflict(Exception):
+        pass
+
+
+    class BulkSaveError(Exception):
+        def __init__(self, errors, results, *args):
+            self.errors = errors
+            self.results = results
 
     # copy-pasted from couchdbkit.resource
     def encode_params(params):
@@ -45,7 +52,7 @@ except ImportError:
             return iter(self.all())
 
 else:
-    from couchdbkit import ResourceNotFound
+    from couchdbkit.exceptions import ResourceNotFound, ResourceConflict, BulkSaveError
     from couchdbkit.resource import encode_params
     from couchdbkit.client import ViewResults
 
@@ -149,18 +156,31 @@ class FakeCouchDb(object):
 
     def save_doc(self, doc, **params):
         if '_id' in doc:
-            existing = self.mock_docs.get(doc['_id'])
-            if existing and existing.get('_rev') != doc.get('_rev'):
-                raise ResourceConflict()
-            doc["_rev"] = str(uuid.uuid1())
+            self._check_conflict(doc)
+            doc["_rev"] = self._next_rev(doc.get("_rev"))
             self.mock_docs[doc["_id"]] = doc
             logger.debug('save_doc(%s)', doc['_id'])
         else:
             id = str(uuid.uuid1())
-            rev = str(uuid.uuid1())
+            rev = self._next_rev()
             doc.update({ '_id': id, '_rev': rev})
             self.mock_docs[doc["_id"]] = doc
             logger.debug('save_doc(%s): ID generated', doc['_id'])
+
+    def _next_rev(self, current_rev=None):
+        current_rev_num = 0
+        if current_rev:
+            try:
+                current_rev_num = int(current_rev.split('-')[0])
+            except ValueError:
+                pass
+
+        return '{}-{}'.format(current_rev_num + 1, str(uuid.uuid1()))
+
+    def _check_conflict(self, doc):
+        existing = self.mock_docs.get(doc['_id'])
+        if existing and existing.get('_rev') != doc.get('_rev'):
+            raise ResourceConflict()
 
     def get(self, docid, rev=None, wrapper=None):
         doc = self.mock_docs.get(docid, None)
@@ -182,6 +202,51 @@ class FakeCouchDb(object):
             raise ResourceNotFound()
         else:
             del self.mock_docs[docid]
+
+    def save_docs(self, docs, use_uuids=True, all_or_nothing=False, new_edits=None, **params):
+        if new_edits or new_edits is None:
+            errors = []
+            error_ids = set()
+            for doc in docs:
+                try:
+                    self._check_conflict(doc)
+                except ResourceConflict:
+                    error_ids.add(doc['_id'])
+                    errors.append({
+                        'error': 'conflict', 'id': doc['_id']
+                    })
+
+            if all_or_nothing and errors:
+                raise BulkSaveError(errors, [])
+            else:
+                results = []
+                for doc in docs:
+                    if doc['_id'] not in error_ids:
+                        self.save_doc(doc)
+                        results.append({'id': doc['_id'], '_rev': doc['_rev']})
+
+                if errors:
+                    raise BulkSaveError(errors, results)
+
+            return results
+        else:
+            # with ``new_edits=False`` only save the doc if it's rev
+            # is greater than the existing doc's rev.
+            for doc in docs:
+                existing = self.mock_docs.get(doc['_id'])
+                if existing:
+                    existing_rev_num = int(existing.get('_rev').split('-')[0])
+                    new_rev_num = int(doc.get('_rev').split('-')[0])
+                    if new_rev_num > existing_rev_num:
+                        self.mock_docs[doc['_id']] = doc
+                else:
+                    if '_rev' not in doc:
+                        doc["_rev"] = self._next_rev()
+                    self.mock_docs[doc['_id']] = doc
+
+            return []
+
+    bulk_save = save_docs
 
 
 class JsonResponse(object):
