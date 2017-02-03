@@ -121,7 +121,7 @@ class FakeCouchDb(object):
         of view query parameters and the second element is a list of view result rows.
         """
         self.view_mock[name] = self._transform_view_results(view_results)
-        logger.debug('View added: %s with keys: %s', name, self.view_mock[name].keys())
+        logger.debug('View added: %s with keys: %s', name, list(self.view_mock[name]))
 
     def update_view(self, name, view_results):
         """Update the view results for a given view.
@@ -143,7 +143,7 @@ class FakeCouchDb(object):
 
     def _param_key(self, params):
         params = encode_params(params)
-        return urlencode(sorted(params.items(), key=lambda p: p[0]))
+        return urlencode(sorted(list(params.items()), key=lambda p: p[0]))
 
     def raw_view(self, view_name, params):
         view = self.view_mock.get(view_name, {})
