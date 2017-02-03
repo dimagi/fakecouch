@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import uuid
 import logging
+import six
 
 # this import pattern lets fakecouch not depend on couchdbkit
 try:
@@ -30,7 +31,7 @@ except ImportError:
                     value = json.dumps(value)
                 elif value is None:
                     continue
-                elif not isinstance(value, basestring):
+                elif not isinstance(value, six.string_types):
                     value = json.dumps(value)
                 _params[name] = value
         return _params
