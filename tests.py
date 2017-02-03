@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from couchdbkit import Document
 from unittest2 import TestCase
 from datetime import date
