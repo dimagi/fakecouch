@@ -144,7 +144,7 @@ class FakeCouchDb(object):
 
     def _param_key(self, params):
         params = encode_params(params)
-        return urlencode(sorted(list(params.items()), key=lambda p: p[0]))
+        return urlencode(sorted(params.items(), key=lambda p: p[0]))
 
     def raw_view(self, view_name, params):
         view = self.view_mock.get(view_name, {})
