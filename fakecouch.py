@@ -1,5 +1,7 @@
+from __future__ import absolute_import
 import uuid
 import logging
+import six
 
 # this import pattern lets fakecouch not depend on couchdbkit
 try:
@@ -29,7 +31,7 @@ except ImportError:
                     value = json.dumps(value)
                 elif value is None:
                     continue
-                elif not isinstance(value, basestring):
+                elif not isinstance(value, six.string_types):
                     value = json.dumps(value)
                 _params[name] = value
         return _params
@@ -120,7 +122,7 @@ class FakeCouchDb(object):
         of view query parameters and the second element is a list of view result rows.
         """
         self.view_mock[name] = self._transform_view_results(view_results)
-        logger.debug('View added: %s with keys: %s', name, self.view_mock[name].keys())
+        logger.debug('View added: %s with keys: %s', name, list(self.view_mock[name]))
 
     def update_view(self, name, view_results):
         """Update the view results for a given view.
