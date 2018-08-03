@@ -17,6 +17,6 @@ setup(
     install_requires=[],
     tests_require=[
         'unittest2',
-        'couchdbkit>=0.9.6',
+        'jsonobject-couchdbkit>=0.9.6',
     ]
 )
