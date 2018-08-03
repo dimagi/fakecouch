@@ -6,7 +6,7 @@ except ImportError:
 
 setup(
     name='fakecouch',
-    version='0.0.10',
+    version='0.0.11',
     description='Fake implementation of CouchDBKit api for testing purposes',
     author='Dimagi',
     author_email='dev@dimagi.com',
@@ -18,6 +18,6 @@ setup(
     install_requires=[],
     tests_require=[
         'unittest2',
-        'couchdbkit',
+        'jsonobject-couchdbkit>=0.9.6',
     ]
 )

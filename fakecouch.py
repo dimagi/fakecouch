@@ -156,7 +156,7 @@ class FakeCouchDb(object):
 
         result = view.get(key, [])
         logger.debug('view(view_name=%s, key=%s): result=%s', view_name, key, result)
-        return JsonResponse(result)
+        return JsonResponse(result).json_body
 
     def view(self, view_name, schema=None, wrapper=None, **params):
         return ViewResults(self.raw_view, view_name, wrapper, schema, params)
